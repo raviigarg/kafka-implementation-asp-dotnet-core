@@ -1,0 +1,44 @@
+version: '3.4'
+
+networks:
+  kafka-network:
+    driver: bridge
+
+services:
+  zookeeper-server:
+    image: 'bitnami/zookeeper:latest'
+    networks:
+      - kafka-network
+    ports:
+      - '2181:2181'
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+  kafka-server1:
+    image: 'bitnami/kafka:latest'
+    networks:
+      - kafka-network    
+    ports:
+      - '9092:9092'
+    expose:
+      - '29092'
+    environment:
+      KAFKA_CFG_ZOOKEEPER_CONNECT: "zookeeper-server:2181"
+      KAFKA_CFG_LISTENERS: "INTERNAL://:29092,EXTERNAL://:9092"
+      KAFKA_CFG_ADVERTISED_LISTENERS: "INTERNAL://kafka-server1:29092,EXTERNAL://localhost:9092"
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT"
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "INTERNAL"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    depends_on:
+      - zookeeper-server
+  kafdrop:
+    image: obsidiandynamics/kafdrop
+    restart: "no"
+    networks:
+      - kafka-network 
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: "kafka-server1:29092"
+      JVM_OPTS: "-Xms16M -Xmx48M -Xss180K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify"
+    depends_on:
+      - "kafka-server1"
