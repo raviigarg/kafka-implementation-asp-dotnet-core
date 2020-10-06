@@ -5,14 +5,16 @@ networks:
     driver: bridge
 
 services:
-  zookeeper-server:
+  zookeeper-server1:
     image: 'bitnami/zookeeper:latest'
     networks:
       - kafka-network
     ports:
       - '2181:2181'
     environment:
+      ZOOKEEPER_SERVER_ID: 1
       ALLOW_ANONYMOUS_LOGIN: "yes"
+      
   kafka-server1:
     image: 'bitnami/kafka:latest'
     networks:
@@ -22,14 +24,54 @@ services:
     expose:
       - '29092'
     environment:
-      KAFKA_CFG_ZOOKEEPER_CONNECT: "zookeeper-server:2181"
+      KAFKA_BROKER_ID: 101
+      KAFKA_CFG_ZOOKEEPER_CONNECT: "zookeeper-server1:2181"
       KAFKA_CFG_LISTENERS: "INTERNAL://:29092,EXTERNAL://:9092"
       KAFKA_CFG_ADVERTISED_LISTENERS: "INTERNAL://kafka-server1:29092,EXTERNAL://localhost:9092"
       KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT"
       KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "INTERNAL"
       ALLOW_PLAINTEXT_LISTENER: "yes"
     depends_on:
-      - zookeeper-server
+      - zookeeper-server1
+      
+  kafka-server2:
+    image: 'bitnami/kafka:latest'
+    networks:
+      - kafka-network    
+    ports:
+      - '9093:9092'
+    expose:
+      - '39092'
+    environment:
+      KAFKA_BROKER_ID: 102
+      KAFKA_CFG_ZOOKEEPER_CONNECT: "zookeeper-server1:2181"
+      KAFKA_CFG_LISTENERS: "INTERNAL://:39092,EXTERNAL://:9093"
+      KAFKA_CFG_ADVERTISED_LISTENERS: "INTERNAL://kafka-server2:39092,EXTERNAL://localhost:9093"
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT"
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "INTERNAL"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    depends_on:
+      - zookeeper-server1
+      
+  kafka-server3:
+    image: 'bitnami/kafka:latest'
+    networks:
+      - kafka-network    
+    ports:
+      - '9094:9092'
+    expose:
+      - '49092'
+    environment:
+      KAFKA_BROKER_ID: 103
+      KAFKA_CFG_ZOOKEEPER_CONNECT: "zookeeper-server1:2181"
+      KAFKA_CFG_LISTENERS: "INTERNAL://:49092,EXTERNAL://:9094"
+      KAFKA_CFG_ADVERTISED_LISTENERS: "INTERNAL://kafka-server3:49092,EXTERNAL://localhost:9094"
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT"
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "INTERNAL"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    depends_on:
+      - zookeeper-server1
+      
   kafdrop:
     image: obsidiandynamics/kafdrop
     restart: "no"
@@ -38,7 +80,9 @@ services:
     ports:
       - "9000:9000"
     environment:
-      KAFKA_BROKERCONNECT: "kafka-server1:29092"
+      KAFKA_BROKERCONNECT: "kafka-server1:29092,kafka-server2:39092,kafka-server3:49092"
       JVM_OPTS: "-Xms16M -Xmx48M -Xss180K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify"
     depends_on:
-      - "kafka-server1"
+      - kafka-server1
+      - kafka-server2
+      - kafka-server3

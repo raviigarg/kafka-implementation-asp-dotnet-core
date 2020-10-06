@@ -14,14 +14,18 @@ namespace KafkaProducer.ConsoleApp
         private static async Task PublishMessages()
         {
             // create producer
-            Dictionary<string, string> properties = new Dictionary<string, string>();
-            properties.Add("bootstrap.servers", "localhost:9092");
+            Dictionary<string, string> properties = new Dictionary<string, string>
+            {
+                { "bootstrap.servers", "localhost:9092" } // address to the broker or cluster
+            };
             Producer producer = new Producer(properties);
 
+            // publish message
             Console.WriteLine("Enter message to publish -");
             string userInput = Console.ReadLine();
-            await producer.Publish("user-input", userInput);
-            Console.WriteLine("Published...");
+            var deliveryResult = await producer.Publish("user_input", userInput);
+            Console.WriteLine("Message published to topic " + deliveryResult.Topic + " Partition " + deliveryResult.Partition
+                + " Offset " + deliveryResult.Offset);
         }
     }
 }
